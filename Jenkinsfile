@@ -28,4 +28,28 @@ pipeline {
             }
         }
     }
+
+    post {
+        success {
+            echo '✅ 建置成功，發送 Slack 成功通知'
+            sh """
+            curl -X POST -H 'Content-type: application/json' \
+              --data '{"text":"✅ Jenkins Job 成功完成！"}' \
+              ${SLACK_WEBHOOK_URL}
+            """
+        }
+
+        failure {
+            echo '❌ 建置失敗，發送 Slack 失敗通知'
+            sh """
+            curl -X POST -H 'Content-type: application/json' \
+              --data '{"text":"❌ Jenkins Job 失敗，請盡快檢查！"}' \
+              ${SLACK_WEBHOOK_URL}
+            """
+        }
+
+        always {
+            echo '📬 Job 結束，進入 post 區塊'
+        }
+    }
 }
