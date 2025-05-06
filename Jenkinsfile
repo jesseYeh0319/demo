@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    environment {
+        SLACK_WEBHOOK_URL = credentials('slack-webhook')
+    }
+    
     parameters {
         string(name: 'USERNAME', defaultValue: 'weiyang', description: '使用者名稱')
         choice(name: 'ENV', choices: ['dev', 'test', 'prod'], description: '部署環境')
