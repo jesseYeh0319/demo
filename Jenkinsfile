@@ -12,6 +12,18 @@ pipeline {
     }
 
     stages {
+        stage('Webhook 驗證') {
+            steps {
+                script {
+                    if (!env.SLACK_WEBHOOK_URL) {
+                        error('❌ SLACK_WEBHOOK_URL 未成功取得，請檢查 credentials ID')
+                    } else {
+                        echo '✅ SLACK_WEBHOOK_URL 已正確讀取'
+                    }
+                }
+            }
+        }
+
         stage('顯示參數') {
             steps {
                 echo "USERNAME = ${params.USERNAME}"
