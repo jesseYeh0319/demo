@@ -18,9 +18,9 @@ pipeline {
 
         stage('顯示參數') {
             steps {
-                echo "USERNAME = ${params.USERNAME}"
-                echo "ENV = ${params.ENV}"
-                echo "SKIP_TESTS = ${params.SKIP_TESTS}"
+                echo "👤 USERNAME = ${params.USERNAME}"
+                echo "🌎 ENV = ${params.ENV}"
+                echo "🧪 SKIP_TESTS = ${params.SKIP_TESTS}"
             }
         }
 
@@ -30,7 +30,7 @@ pipeline {
                     if (params.ENV == 'prod') {
                         echo '⚠️ 正在部署到正式環境！'
                     } else {
-                        echo "部署到 ${params.ENV} 環境中..."
+                        echo "🚧 部署到 ${params.ENV} 環境中..."
                     }
                 }
             }
@@ -41,27 +41,22 @@ pipeline {
         success {
             echo '✅ 建置成功，發送 Slack 成功通知'
             withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
-                sh '''
-                curl -X POST -H 'Content-type: application/json' \
-                  --data '{"text":"✅ Jenkins Job 成功完成！"}' \
-                  $SLACK_URL
-                '''
+                sh 'curl -X POST -H "Content-type: application/json" --data \'{"text":"✅ Jenkins Job 成功完成！"}\' $SLACK_URL'
             }
         }
 
         failure {
             echo '❌ 建置失敗，發送 Slack 失敗通知'
             withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
-                sh '''
-                curl -X POST -H 'Content-type: application/json' \
-                  --data '{"text":"❌ Jenkins Job 失敗，請立即查看！"}' \
-                  $SLACK_URL
-                '''
+                sh 'curl -X POST -H "Content-type: application/json" --data \'{"text":"❌ Jenkins Job 失敗，請立即查看！"}\' $SLACK_URL'
             }
         }
 
         always {
-            echo '📬 Job 結束，進入 post 區塊'
+            echo '📬 Jenkins Job 完成，進入 post 區塊'
+            withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
+                sh 'curl -X POST -H "Content-type: application/json" --data \'{"text":"📬 Jenkins Job 執行完畢（不論成功或失敗）"}\' $SLACK_URL'
+            }
         }
     }
 }
