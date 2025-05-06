@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        SLACK_WEBHOOK_URL = credentials('slack-webhook')
-    }
-    
     parameters {
         string(name: 'USERNAME', defaultValue: 'weiyang', description: '使用者名稱')
         choice(name: 'ENV', choices: ['dev', 'test', 'prod'], description: '部署環境')
@@ -14,12 +10,8 @@ pipeline {
     stages {
         stage('Webhook 驗證') {
             steps {
-                script {
-                    if (!env.SLACK_WEBHOOK_URL) {
-                        error('❌ SLACK_WEBHOOK_URL 未成功取得，請檢查 credentials ID')
-                    } else {
-                        echo '✅ SLACK_WEBHOOK_URL 已正確讀取'
-                    }
+                withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
+                    sh 'echo "✅ SLACK_URL 已成功取得：$SLACK_URL"'
                 }
             }
         }
@@ -48,20 +40,24 @@ pipeline {
     post {
         success {
             echo '✅ 建置成功，發送 Slack 成功通知'
-            sh """
-            curl -X POST -H 'Content-type: application/json' \
-              --data '{"text":"✅ Jenkins Job 成功完成！"}' \
-              ${SLACK_WEBHOOK_URL}
-            """
+            withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
+                sh '''
+                curl -X POST -H 'Content-type: application/json' \
+                  --data '{"text":"✅ Jenkins Job 成功完成！"}' \
+                  $SLACK_URL
+                '''
+            }
         }
 
         failure {
             echo '❌ 建置失敗，發送 Slack 失敗通知'
-            sh """
-            curl -X POST -H 'Content-type: application/json' \
-              --data '{"text":"❌ Jenkins Job 失敗，請盡快檢查！"}' \
-              ${SLACK_WEBHOOK_URL}
-            """
+            withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
+                sh '''
+                curl -X POST -H 'Content-type: application/json' \
+                  --data '{"text":"❌ Jenkins Job 失敗，請立即查看！"}' \
+                  $SLACK_URL
+                '''
+            }
         }
 
         always {
