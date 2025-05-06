@@ -7,6 +7,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class TestController {
     @GetMapping
     public String aaa(){
-        return "TEST";
+        return "ngrok_TEST";
     }
 }
