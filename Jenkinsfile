@@ -12,7 +12,7 @@ pipeline {
             steps {
                 echo "USERNAME = ${params.USERNAME}"
                 echo "ENV = ${params.ENV}"
-                echo "ENABLE_DEBUG = ${params.ENABLE_DEBUG}"
+                echo "SKIP_TESTS = ${params.SKIP_TESTS}"
             }
         }
 
