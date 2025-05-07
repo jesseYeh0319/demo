@@ -8,6 +8,14 @@ pipeline {
     }
 
     stages {
+
+        stage('清除 Workspace') {
+            steps {
+                echo '🧹 清除 Jenkins Workspace'
+                deleteDir()
+            }
+        }
+        
         stage('Webhook 驗證') {
             steps {
                 withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
