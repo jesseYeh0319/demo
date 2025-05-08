@@ -5,7 +5,19 @@ pipeline {
     choice(name: 'ENV_FILE', choices: ['.env.dev', '.env.prod'], description: '選擇部署環境')
   }
 
+	
+
   stages {
+
+    stage('使用機密') {
+      steps {
+	withCredentials([string(credentialsId: 'db-password', variable: 'DB_PASS')]) {
+	  sh 'echo 資料庫密碼為：$DB_PASS'
+	  sh 'docker run -e POSTGRES_PASSWORD=$DB_PASS postgres:14'
+	}
+      }
+    }
+	  
     stage('Build Image') {
       steps {
 	echo '✅ Build Image'
