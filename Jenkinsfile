@@ -13,7 +13,6 @@ pipeline {
       steps {
 	withCredentials([string(credentialsId: 'db-password', variable: 'DB_PASS')]) {
 	  sh 'echo 資料庫密碼為：$DB_PASS'
-	  sh 'docker run -e POSTGRES_PASSWORD=$DB_PASS postgres:14'
 	}
       }
     }
