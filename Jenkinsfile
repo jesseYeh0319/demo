@@ -9,6 +9,12 @@ pipeline {
 
   stages {
 
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
     stage('使用機密') {
       steps {
 	withCredentials([string(credentialsId: 'db-password', variable: 'DB_PASS')]) {
@@ -19,8 +25,10 @@ pipeline {
 	  
     stage('Build Image') {
       steps {
-	echo '✅ Build Image'
-        sh 'docker-compose --env-file ${ENV_FILE} build'
+        dir("${env.WORKSPACE}") {
+	  echo '✅ Build Image'
+          sh 'docker-compose --env-file ${ENV_FILE} build'
+        }
       }
     }
 
