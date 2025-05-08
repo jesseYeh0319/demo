@@ -9,11 +9,11 @@ pipeline {
 
   stages {
 
-    stage('Checkout') {
-      steps {
-        checkout scm
-      }
-    }
+    stage('確認目錄') {
+	  steps {
+	    sh 'pwd && ls -al'
+	  }
+	}
 
     stage('使用機密') {
       steps {
