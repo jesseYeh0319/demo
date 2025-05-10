@@ -12,8 +12,6 @@ pipeline {
     DOCKERHUB_CREDENTIALS = 'docker-hub'
   }
 
-  stages {
-
   triggers {
     GenericTrigger(
       genericVariables: [
@@ -50,8 +48,6 @@ pipeline {
     }
   }
 
-  }
-
   post {
     always {
       echo '🚧 清理資源中...'
@@ -69,4 +65,3 @@ pipeline {
     }
   }
 }
-
