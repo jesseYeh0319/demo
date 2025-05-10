@@ -8,7 +8,7 @@ pipeline {
 	
    environment {
     IMAGE_NAME = 'yehweiyang/demo:latest'
-   IMAGE_TAG = "${IMAGE_REPO}:${TAG}"
+   IMAGE_TAG = "${IMAGE_NAME}:${TAG}"
     DOCKERHUB_CREDENTIALS = 'docker-hub'
   }
 
