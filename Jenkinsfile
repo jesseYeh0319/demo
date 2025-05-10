@@ -16,43 +16,31 @@ pipeline {
 	
 
   stages {
-        stage('取得版本資訊') {
-	  steps {
-	    script {
-	      def commitHash = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-	      env.COMMIT_HASH = commitHash
-	      env.BUILD_TIME_TAG = "build-${env.BUILD_NUMBER}"
-	      env.LATEST_TAG = "${env.IMAGE_REPO}:latest"
-	      env.DEV_TAG = "${env.IMAGE_REPO}:dev"
-	      env.HASH_TAG = "${env.IMAGE_REPO}:${commitHash}"
-	      env.BUILD_TAG = "${env.IMAGE_REPO}:${env.BUILD_TIME_TAG}"
-	    }
-	  }
-	}
-
-    stage('建構映像') {
+    stage('打包專案') {
       steps {
         sh './mvnw clean package -DskipTests'
-        sh 'docker build -t $LATEST_TAG .'
-        sh 'docker tag $LATEST_TAG $DEV_TAG'
-        sh 'docker tag $LATEST_TAG $HASH_TAG'
-        sh 'docker tag $LATEST_TAG $BUILD_TAG'
+      }
+    }
+
+    stage('Docker login 並建置映像檔') {
+      steps {
+        script {
+          withCredentials([usernamePassword(
+            credentialsId: '$DOCKERHUB_CREDENTIALS',
+            usernameVariable: 'DOCKER_USER',
+            passwordVariable: 'DOCKER_PASS'
+          )]) {
+            sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+            sh 'docker build -t $IMAGE_NAME .'
+          }
+        }
       }
     }
 
 
-    stage('登入並推送') {
+    stage('推送映像檔') {
       steps {
-        withCredentials([
-          usernamePassword(credentialsId: "$DOCKERHUB_CREDENTIALS", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')
-        ]) {
-          sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
-        }
-
-        sh 'docker push $LATEST_TAG'
-        sh 'docker push $DEV_TAG'
-        sh 'docker push $HASH_TAG'
-        sh 'docker push $BUILD_TAG'
+        sh 'docker push $IMAGE_NAME'
       }
     }
    
@@ -60,8 +48,15 @@ pipeline {
   
 
   post {
+    always {
+      echo '🚧 清理資源中...'
+      sh 'docker logout || true'
+    }
     success {
-       echo '✅ 所有 tag 已成功推送'
+      echo '✅ 建置成功，映像檔已上傳 Docker Hub'
+    }
+    failure {
+      echo '❌ 建置失敗，請檢查 log'
     }
   }
 }
