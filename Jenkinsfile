@@ -3,7 +3,7 @@ pipeline {
 
   environment {
     IMAGE_NAME = 'yehweiyang/demo:latest'
-    DOCKERHUB_CREDENTIALS = 'docker-hub' // Jenkins 認證ID
+    DOCKERHUB_CREDENTIALS = 'docker-hub' // Jenkins 認證ID1
   }
   parameters {
     choice(name: 'ENV_FILE', choices: ['.env.dev', '.env.prod'], description: '選擇部署環境')
