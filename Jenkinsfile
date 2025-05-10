@@ -38,6 +38,10 @@ pipeline {
 
           if (comment == "/retest") {
             echo "🔁 開始執行測試流程..."
+
+  sh 'mvn clean verify -DskipITs=false'      // 單元 + 整合測試
+  junit 'target/surefire-reports/*.xml'     // 測試結果報告
+  archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
           } else if (comment == "/deploy") {
             echo "🚀 執行部署流程中..."
           } else {
