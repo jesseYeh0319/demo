@@ -32,29 +32,15 @@ stage('產出 changelog') {
 
 stage('標記版本') {
   steps {
-	  echo '標記版本...'
+    echo '標記版本...'
     script {
       def tag = "v1.0-${env.BUILD_NUMBER}"
-      sh "git tag ${tag}"
-      sh "git push origin ${tag}"
-    }
 
-script {
-  def tag = "v1.0-${env.BUILD_NUMBER}"
-  withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
-    sh 'git config user.email "yehjesse96@gmail.com"'
-    sh 'git config user.name "jenkins-bot"'
-    
-    // 把原本的遠端改成帶有帳號密碼的 HTTPS
-    sh 'git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/jesseYeh0319/demo.git'
-
-    
-    // 正常打 tag 與 push
-    sh "git tag ${tag}"
-    sh "git push origin ${tag}"
-  }
+withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+  echo "GIT_USER = ${GIT_USER}"
+  echo "GIT_TOKEN = ****** (masked)"
 }
-	  
+    }
   }
 }
 
