@@ -1,17 +1,13 @@
-@Library('my-shared-lib') _
-
 properties([
   pipelineTriggers([
     [$class: 'GenericTrigger',
+      token: 'github-actions-token',
       genericVariables: [
-        [key: 'COMMENT', value: '$.comment.body'],
-        [key: 'PR_NUMBER', value: '$.issue.number']
+        [key: 'from', value: '$.from'],
+        [key: 'branch', value: '$.branch']
       ],
-      causeString: 'Triggered on comment: $COMMENT',
-      token: 'github-pr-comment-token',
-      printContributedVariables: true,
-      regexpFilterText: '$COMMENT',
-      regexpFilterExpression: '^/(retest|deploy)$'
+      causeString: 'Triggered from GitHub Actions',
+      printContributedVariables: true
     ]
   ])
 ])
@@ -19,53 +15,22 @@ properties([
 pipeline {
   agent any
 
-  environment {
-    IMAGE_REPO = 'yehweiyang/demo'
-    DOCKERHUB_CREDENTIALS = 'docker-hub'
-  }
-
-  parameters {
-    string(name: 'TAG', defaultValue: 'dev', description: '映像檔版本 Tag')
-  }
-
   stages {
-    stage('Triggered by PR comment') {
+    stage('Deploy') {
       steps {
-        script {
-          def comment = env.COMMENT?.trim()
-
-          echo "👉 PR #${env.PR_NUMBER} 提出指令：${comment}"
-
-          if (comment == "/retest") {
-            echo "🔁 開始執行測試流程..."
-
-  sh './mvnw clean verify -DskipITs=false'      // 單元 + 整合測試
-  junit 'target/surefire-reports/*.xml'     // 測試結果報告
-  archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-          } else if (comment == "/deploy") {
-            echo "🚀 執行部署流程中..."
-          } else {
-            echo "❌ 未支援的指令，跳過執行"
-          }
-        }
+        echo "🚀 接收到 GitHub Actions 來的 webhook！"
+        echo "分支名稱：${env.branch}"
       }
     }
   }
 
   post {
-    always {
-      echo '🚧 清理資源中...'
-      sh 'docker logout || true'
-    }
     success {
-      script {
-        notifySlack("Build 成功", ":white_check_mark:")
-      }
+      echo "✅ 部署成功，已回報"
     }
     failure {
-      script {
-        notifySlack("Build 失敗，請立即檢查 Log ⚠️", ":x:")
-      }
+      echo "❌ 部署失敗，請檢查 log"
     }
   }
 }
+
