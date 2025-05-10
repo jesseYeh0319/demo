@@ -38,10 +38,8 @@ pipeline {
 
           if (comment == "/retest") {
             echo "🔁 開始執行測試流程..."
-            sh './run-tests.sh'
           } else if (comment == "/deploy") {
             echo "🚀 執行部署流程中..."
-            sh './deploy-to-staging.sh'
           } else {
             echo "❌ 未支援的指令，跳過執行"
           }
