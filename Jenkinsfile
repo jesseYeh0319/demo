@@ -1,65 +1,63 @@
+@Library('my-shared-lib') _
+
 pipeline {
   agent any
 
-
- parameters {
+  parameters {
     string(name: 'TAG', defaultValue: 'dev', description: '映像檔版本 Tag')
   }
-	
-   environment {
+
+  environment {
     IMAGE_REPO = 'yehweiyang/demo'
     DOCKERHUB_CREDENTIALS = 'docker-hub'
   }
 
-
-
-	
-
   stages {
 
-stage('產出 changelog') {
-  steps {
-	    echo '產出 changelog...'
-    sh 'git log -n 10 --pretty=format:"* %s (%an) [%h]" > CHANGELOG.md'
-    archiveArtifacts artifacts: 'CHANGELOG.md', fingerprint: true
-  }
-}
+    stage('產出 changelog') {
+      steps {
+        echo '產出 changelog...'
+        sh '''
+          export LANG=en_US.UTF-8
+          export LC_ALL=en_US.UTF-8
+          git log -n 10 --pretty=format:"* %s (%an) [%h]" | iconv -f UTF-8 -t UTF-8 > CHANGELOG.md
+        '''
+        archiveArtifacts artifacts: 'CHANGELOG.md', fingerprint: true
+      }
+    }
+
     stage('打包專案') {
       steps {
         sh './mvnw clean package -DskipTests'
       }
     }
 
-stage('標記版本') {
-  steps {
-    echo '標記版本...'
-    script {
-	sh 'git remote -v'
-	sh 'git status'
-      def tag = "v1.0-${env.BUILD_NUMBER}"
-      withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
-        sh 'git config user.email "yehjesse96@gmail.com"'
-        sh 'git config user.name "jenkins-bot"'
-        
-        // ✅ 正確帶上 token
-        sh "git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/jesseYeh0319/demo.git"
-        
-        sh "git tag ${tag}"
-        sh "git push origin ${tag}"
+    stage('標記版本') {
+      steps {
+        echo '標記版本...'
+        script {
+          sh 'git remote -v'
+          sh 'git status'
+          def tag = "v1.0-${env.BUILD_NUMBER}"
+          withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+            sh 'git config user.email "yehjesse96@gmail.com"'
+            sh 'git config user.name "jenkins-bot"'
+            sh "git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/jesseYeh0319/demo.git"
+            sh "git tag ${tag}"
+            sh "git push origin ${tag}"
+          }
+        }
       }
     }
-  }
-}
 
-stage('Archive JAR') {
-  steps {
-	  echo 'Archive JAR...'
-    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-  }
-}
+    stage('Archive JAR') {
+      steps {
+        echo 'Archive JAR...'
+        archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+      }
+    }
 
   }
-  
 
   post {
     always {
@@ -68,26 +66,14 @@ stage('Archive JAR') {
     }
     success {
       script {
-      withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
-        sh '''
-        curl -X POST -H 'Content-type: application/json' --data '{
-  	"text": ":white_check_mark: Job: ${env.JOB_NAME} #${env.BUILD_NUMBER} 成功 🎉\\n👉 ${env.BUILD_URL}"
-        }' "$SLACK_URL"
-        '''
+        notifySlack("Build 成功", ":white_check_mark:")
       }
-    }
     }
     failure {
-    script {
-      withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
-        sh '''
-        curl -X POST -H 'Content-type: application/json' --data '{
-          "text": ":x: Jenkins 任務失敗！請立即檢查 Log ⚠️"
-        }' "$SLACK_URL"
-        '''
+      script {
+        notifySlack("Build 失敗，請立即檢查 Log ⚠️", ":x:")
       }
     }
-  }
   }
 }
 
