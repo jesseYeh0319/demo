@@ -44,7 +44,7 @@ pipeline {
       }
     }
 
-stage('推送 Docker 映像檔 _ test1234') {
+stage('推送 Docker 映像檔 _ test12345') {
   steps {
     sh 'docker push $IMAGE_NAME'
   }
