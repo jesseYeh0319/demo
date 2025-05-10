@@ -16,11 +16,37 @@ pipeline {
 	
 
   stages {
+
+stage('產出 changelog') {
+  steps {
+	    echo '產出 changelog...'
+    sh 'git log -n 10 --pretty=format:"* %s (%an) [%h]" > CHANGELOG.md'
+    archiveArtifacts artifacts: 'CHANGELOG.md', fingerprint: true
+  }
+}
     stage('打包專案') {
       steps {
         sh './mvnw clean package -DskipTests'
       }
     }
+
+stage('標記版本') {
+  steps {
+	  echo '標記版本...'
+    script {
+      def tag = "v1.0-${env.BUILD_NUMBER}"
+      sh "git tag ${tag}"
+      sh "git push origin ${tag}"
+    }
+  }
+}
+
+stage('Archive JAR') {
+  steps {
+	  echo 'Archive JAR...'
+    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+  }
+}
 
   }
   
@@ -35,7 +61,7 @@ pipeline {
       withCredentials([string(credentialsId: 'slack-webhook', variable: 'SLACK_URL')]) {
         sh '''
         curl -X POST -H 'Content-type: application/json' --data '{
-          "text": ":white_check_mark: Jenkins 任務成功！🎉"
+  	"text": ":white_check_mark: Job: ${env.JOB_NAME} #${env.BUILD_NUMBER} 成功 🎉\\n👉 ${env.BUILD_URL}"
         }' "$SLACK_URL"
         '''
       }
