@@ -32,6 +32,38 @@ pipeline {
       }
     }
 
+    stage('部署前審核') {
+      steps {
+        script {
+          timeout(time: 30, unit: 'MINUTES') {
+            input message: '主管請審核', submitter: 'admin,dev-lead'
+          }
+        }
+      }
+    }
+
+    stage('部署確認') {
+      steps {
+        script {
+          def result = input(
+            id: 'ApprovalInput',
+            message: '請選擇要部署的環境',
+            parameters: [
+              choice(name: 'ENV', choices: ['staging', 'production'], description: '請選擇部署環境'),
+              string(name: 'REASON', defaultValue: '例行部署', description: '請填寫說明')
+            ]
+          )
+    
+          def targetEnv = result['ENV']
+          def reason = result['REASON']
+    
+          echo "選擇環境：${targetEnv}"
+          echo "說明內容：${reason}"
+        }
+      }
+    }
+
+
     stage('標記版本') {
       steps {
         echo '標記版本...'
