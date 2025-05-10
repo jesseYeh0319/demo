@@ -1,8 +1,9 @@
 pipeline {
   agent any
 
-  parameters {
-    choice(name: 'ENV_FILE', choices: ['.env.dev', '.env.prod'], description: '選擇部署環境')
+  environment {
+    IMAGE_NAME = 'yehweiyang/demo:latest'
+    DOCKERHUB_CREDENTIALS = 'docker-hub' // Jenkins 認證ID
   }
 
 	
@@ -15,36 +16,34 @@ pipeline {
 	  }
 	}
 
-    stage('使用機密') {
+  stage('檢查環境') {
       steps {
-	withCredentials([string(credentialsId: 'db-password', variable: 'DB_PASS')]) {
-	  sh 'echo 資料庫密碼為：$DB_PASS'
-	}
+        sh 'java -version'
+    	sh './mvnw -version' // ✅ 確保使用 wrapper 版本一致
       }
     }
-	  
-    stage('Build Image') {
+
+  stage('打包專案') {
       steps {
-        dir("${env.WORKSPACE}") {
-	  echo '✅ Build Image'
-          sh 'docker-compose --env-file ${ENV_FILE} build'
+        sh './mvnw clean package -DskipTests'
+        sh 'ls -lh target/*.jar'
+      }
+    }
+
+   stage('建構 Docker 映像檔') {
+      steps {
+        sh 'docker build -t $IMAGE_NAME .'
+      }
+    }
+
+   stage('登入 Docker Hub') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: "$DOCKERHUB_CREDENTIALS", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
         }
       }
     }
 
-    stage('Stop Existing Containers') {
-      steps {
-	echo '✅Stop Existing Containers'
-        sh 'docker-compose --env-file ${ENV_FILE} down'
-      }
-    }
-
-    stage('Start Services') {
-      steps {
-	echo '✅ Start Services'
-        sh 'docker-compose --env-file ${ENV_FILE} up -d'
-      }
-    }
   }
 }
 
