@@ -61,6 +61,7 @@ pipeline {
 
   post {
     success {
+       echo '✅ 是否有更新到新版本'
        echo '✅ 所有 tag 已成功推送'
     }
   }
