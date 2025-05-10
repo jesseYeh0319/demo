@@ -16,18 +16,19 @@ pipeline {
 	
 
   stages {
-    stage('取得版本資訊') {
-      steps {
-        script {
-          COMMIT_HASH = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-          BUILD_TIME_TAG = "build-${env.BUILD_NUMBER}"
-          LATEST_TAG = "${IMAGE_REPO}:latest"
-          DEV_TAG = "${IMAGE_REPO}:dev"
-          HASH_TAG = "${IMAGE_REPO}:${COMMIT_HASH}"
-          BUILD_TAG = "${IMAGE_REPO}:${BUILD_TIME_TAG}"
-        }
-      }
-    }
+        stage('取得版本資訊') {
+	  steps {
+	    script {
+	      def commitHash = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+	      env.COMMIT_HASH = commitHash
+	      env.BUILD_TIME_TAG = "build-${env.BUILD_NUMBER}"
+	      env.LATEST_TAG = "${env.IMAGE_REPO}:latest"
+	      env.DEV_TAG = "${env.IMAGE_REPO}:dev"
+	      env.HASH_TAG = "${env.IMAGE_REPO}:${commitHash}"
+	      env.BUILD_TAG = "${env.IMAGE_REPO}:${env.BUILD_TIME_TAG}"
+	    }
+	  }
+	}
 
     stage('建構映像') {
       steps {
