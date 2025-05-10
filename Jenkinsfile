@@ -34,12 +34,19 @@ stage('標記版本') {
   steps {
     echo '標記版本...'
     script {
+	sh 'git remote -v'
+	sh 'git status'
       def tag = "v1.0-${env.BUILD_NUMBER}"
-
-withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
-  echo "GIT_USER = ${GIT_USER}"
-  echo "GIT_TOKEN = ****** (masked)"
-}
+      withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
+        sh 'git config user.email "yehjesse96@gmail.com"'
+        sh 'git config user.name "jenkins-bot"'
+        
+        // ✅ 正確帶上 token
+        sh "git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/jesseYeh0319/demo.git"
+        
+        sh "git tag ${tag}"
+        sh "git push origin ${tag}"
+      }
     }
   }
 }
