@@ -16,40 +16,52 @@ pipeline {
 	
 
   stages {
-
-
-   stage('取得 Commit Hash') {
+    stage('取得版本資訊') {
       steps {
         script {
           COMMIT_HASH = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
-          IMAGE_TAG = "${IMAGE_REPO}:${COMMIT_HASH}"
-          env.IMAGE_TAG = IMAGE_TAG
-          echo "🔖 使用映像版本：${IMAGE_TAG}"
+          BUILD_TIME_TAG = "build-${env.BUILD_NUMBER}"
+          LATEST_TAG = "${IMAGE_REPO}:latest"
+          DEV_TAG = "${IMAGE_REPO}:dev"
+          HASH_TAG = "${IMAGE_REPO}:${COMMIT_HASH}"
+          BUILD_TAG = "${IMAGE_REPO}:${BUILD_TIME_TAG}"
         }
       }
     }
 
-    
-    stage('打包與推送映像') {
+    stage('建構映像') {
       steps {
         sh './mvnw clean package -DskipTests'
-        sh 'docker build -t $IMAGE_TAG .'
+        sh 'docker build -t $LATEST_TAG .'
+        sh 'docker tag $LATEST_TAG $DEV_TAG'
+        sh 'docker tag $LATEST_TAG $HASH_TAG'
+        sh 'docker tag $LATEST_TAG $BUILD_TAG'
+      }
+    }
 
+
+    stage('登入並推送') {
+      steps {
         withCredentials([
           usernamePassword(credentialsId: "$DOCKERHUB_CREDENTIALS", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')
         ]) {
           sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
         }
 
-        sh 'docker push $IMAGE_TAG'
+        sh 'docker push $LATEST_TAG'
+        sh 'docker push $DEV_TAG'
+        sh 'docker push $HASH_TAG'
+        sh 'docker push $BUILD_TAG'
       }
     }
+  }
+   
   }
   
 
   post {
     success {
-      echo '✅ Build & Push 完成：$IMAGE_TAG'
+       echo '✅ 所有 tag 已成功推送'
     }
   }
 }
