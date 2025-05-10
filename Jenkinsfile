@@ -7,7 +7,7 @@ pipeline {
   }
 	
    environment {
-    IMAGE_NAME = 'yehweiyang/demo:latest'
+    IMAGE_NAME = 'yehweiyang/demo'
    IMAGE_TAG = "${IMAGE_NAME}:${TAG}"
     DOCKERHUB_CREDENTIALS = 'docker-hub'
   }
