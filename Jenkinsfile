@@ -14,80 +14,41 @@ pipeline {
 
   stages {
 
-    stage('產出 changelog') {
-      steps {
-        echo '產出 changelog...'
-        sh '''
-          export LANG=en_US.UTF-8
-          export LC_ALL=en_US.UTF-8
-          git log -n 10 --pretty=format:"* %s (%an) [%h]" | iconv -f UTF-8 -t UTF-8 > CHANGELOG.md
-        '''
-        archiveArtifacts artifacts: 'CHANGELOG.md', fingerprint: true
-      }
-    }
+  triggers {
+    GenericTrigger(
+      genericVariables: [
+        [key: 'COMMENT', value: '$.comment.body'],
+        [key: 'PR_NUMBER', value: '$.issue.number']
+      ],
+      causeString: 'Triggered on comment: $COMMENT',
+      token: 'github-pr-comment-token',
+      printContributedVariables: true,
+      regexpFilterText: '$COMMENT',
+      regexpFilterExpression: '^/(retest|deploy)$'
+    )
+  }
 
-    stage('打包專案') {
-      steps {
-        sh './mvnw clean package -DskipTests'
-      }
-    }
-
-    stage('部署前審核') {
+  stages {
+    stage('Triggered by PR comment') {
       steps {
         script {
-          timeout(time: 30, unit: 'MINUTES') {
-            input message: '主管請審核', submitter: 'admin,dev-lead'
+          def comment = env.COMMENT?.trim()
+
+          echo "👉 PR #${env.PR_NUMBER} 提出指令：${comment}"
+
+          if (comment == "/retest") {
+            echo "🔁 開始執行測試流程..."
+            sh './run-tests.sh'
+          } else if (comment == "/deploy") {
+            echo "🚀 執行部署流程中..."
+            sh './deploy-to-staging.sh'
+          } else {
+            echo "❌ 未支援的指令，跳過執行"
           }
         }
       }
     }
-
-    stage('部署確認') {
-      steps {
-        script {
-          def result = input(
-            id: 'ApprovalInput',
-            message: '請選擇要部署的環境',
-            parameters: [
-              choice(name: 'ENV', choices: ['staging', 'production'], description: '請選擇部署環境'),
-              string(name: 'REASON', defaultValue: '例行部署', description: '請填寫說明')
-            ]
-          )
-    
-          def targetEnv = result['ENV']
-          def reason = result['REASON']
-    
-          echo "選擇環境：${targetEnv}"
-          echo "說明內容：${reason}"
-        }
-      }
-    }
-
-
-    stage('標記版本') {
-      steps {
-        echo '標記版本...'
-        script {
-          sh 'git remote -v'
-          sh 'git status'
-          def tag = "v1.0-${env.BUILD_NUMBER}"
-          withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_TOKEN')]) {
-            sh 'git config user.email "yehjesse96@gmail.com"'
-            sh 'git config user.name "jenkins-bot"'
-            sh "git remote set-url origin https://${GIT_USER}:${GIT_TOKEN}@github.com/jesseYeh0319/demo.git"
-            sh "git tag ${tag}"
-            sh "git push origin ${tag}"
-          }
-        }
-      }
-    }
-
-    stage('Archive JAR') {
-      steps {
-        echo 'Archive JAR...'
-        archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-      }
-    }
+  }
 
   }
 
