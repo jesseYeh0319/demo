@@ -7,8 +7,7 @@ pipeline {
   }
 	
    environment {
-    IMAGE_NAME = 'yehweiyang/demo'
-   IMAGE_TAG = "${IMAGE_NAME}:${TAG}"
+    IMAGE_REPO = 'yehweiyang/demo'
     DOCKERHUB_CREDENTIALS = 'docker-hub'
   }
 
@@ -19,20 +18,29 @@ pipeline {
   stages {
 
 
-    stage('打包與建構') {
+   stage('取得 Commit Hash') {
       steps {
-        sh './mvnw clean package -DskipTests'
-        sh 'docker build -t $IMAGE_TAG .'
+        script {
+          COMMIT_HASH = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+          IMAGE_TAG = "${IMAGE_REPO}:${COMMIT_HASH}"
+          env.IMAGE_TAG = IMAGE_TAG
+          echo "🔖 使用映像版本：${IMAGE_TAG}"
+        }
       }
     }
 
-    stage('登入並推送') {
+    
+    stage('打包與推送映像') {
       steps {
+        sh './mvnw clean package -DskipTests'
+        sh 'docker build -t $IMAGE_TAG .'
+
         withCredentials([
           usernamePassword(credentialsId: "$DOCKERHUB_CREDENTIALS", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')
         ]) {
           sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
         }
+
         sh 'docker push $IMAGE_TAG'
       }
     }
@@ -41,7 +49,7 @@ pipeline {
 
   post {
     success {
-      echo "✅ 映像推送成功：$IMAGE_TAG"
+      echo '✅ Build & Push 完成：$IMAGE_TAG'
     }
   }
 }
