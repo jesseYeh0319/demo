@@ -1,58 +1,47 @@
 pipeline {
   agent any
 
-  environment {
+   environment {
     IMAGE_NAME = 'yehweiyang/demo:latest'
-    DOCKERHUB_CREDENTIALS = 'docker-hub' // Jenkins 認證ID1
-  }
-  parameters {
-    choice(name: 'ENV_FILE', choices: ['.env.dev', '.env.prod'], description: '選擇部署環境')
+    DOCKERHUB_CREDENTIALS = 'docker-hub'
   }
 	
 
   stages {
 
-    stage('確認目錄') {
-	  steps {
-	    sh 'pwd && ls -al'
-	  }
-	}
-
-  stage('檢查環境') {
+    stage('確認 Maven Wrapper') {
       steps {
-        sh 'java -version'
-    	sh './mvnw -version' // ✅ 確保使用 wrapper 版本一致
+        sh 'ls -l ./mvnw'
+        sh './mvnw -version'
       }
     }
 
-  stage('打包專案') {
+    stage('打包專案') {
       steps {
         sh './mvnw clean package -DskipTests'
-        sh 'ls -lh target/*.jar'
       }
     }
 
-   stage('建構 Docker 映像檔') {
+    stage('建構並推送 Docker 映像檔') {
       steps {
         sh 'docker build -t $IMAGE_NAME .'
-      }
-    }
-
-   stage('登入 Docker Hub') {
-      steps {
-        withCredentials([usernamePassword(credentialsId: "$DOCKERHUB_CREDENTIALS", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-          sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+        withCredentials([
+          usernamePassword(credentialsId: "$DOCKERHUB_CREDENTIALS", usernameVariable: 'DOCKER_USER123', passwordVariable: 'DOCKER_PASS123')
+        ]) {
+          sh 'echo "$DOCKER_PASS123" | docker login -u "$DOCKER_USER123" --password-stdin'
         }
+        sh 'docker push $IMAGE_NAME'
       }
     }
-
-stage('推送 Docker 映像檔 _ test12345') {
-  steps {
-    sh 'docker push $IMAGE_NAME'
   }
-}
 
-
+  post {
+    success {
+      echo '✅ 使用 mvnw 建構與推送完成'
+    }
+    failure {
+      echo '❌ 建構失敗，請檢查錯誤日誌'
+    }
   }
 }
 
