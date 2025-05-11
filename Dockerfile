@@ -12,5 +12,10 @@ FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8082
+
+# ✅ Healthcheck 加入 curl 測試 API 回應
+HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=3 \
+  CMD curl --fail http://localhost:8080/actuator/health || exit 1
+
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
