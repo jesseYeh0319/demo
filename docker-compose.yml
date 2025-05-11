@@ -7,8 +7,12 @@ services:
       dockerfile: Dockerfile
     ports:
       - "${APP_PORT}:8082"
+    depends_on:
+      - db
     environment:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+    networks:
+      - backend
 
   db:
     image: postgres:14
@@ -20,7 +24,14 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pg_data:/var/lib/postgresql/data
+      - ${DB_VOLUME_NAME}:/var/lib/postgresql/data
+    networks:
+      - backend
 
 volumes:
-  pg_data:
+  pg_data_dev:
+  pg_data_prod:
+
+networks:
+      - backend
+
